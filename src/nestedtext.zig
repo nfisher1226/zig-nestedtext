@@ -756,13 +756,21 @@ pub const Parser = struct {
                         switch (value) {
                             .List => |list| {
                                 var array = ArrayList(ptr_info.child).init(p.allocator);
+                                // Using array.popOrNull() shows up a Zig compiler bug!
                                 errdefer {
-                                    var i: usize = array.items.len;
-                                    while (i > 0) : (i -= 1) {
-                                        p.parseTypedFreeInternal(ptr_info.child, array.pop());
+                                    while (array.popOrNull()) |v| {
+                                        p.parseTypedFreeInternal(ptr_info.child, v);
                                     }
                                     array.deinit();
                                 }
+                                // This works fine though!
+                                // errdefer {
+                                //     var i: usize = array.items.len;
+                                //     while (i > 0) : (i -= 1) {
+                                //         p.parseTypedFreeInternal(ptr_info.child, array.pop());
+                                //     }
+                                //     array.deinit();
+                                // }
 
                                 try array.ensureTotalCapacity(list.items.len);
                                 for (list.items) |val| {
